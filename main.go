@@ -26,7 +26,7 @@ type Action struct {
 	High         int    `action:"high-threshold"`
 	Medium       int    `action:"medium-threshold"`
 	Low          int    `action:"low-threshold"`
-	ExitOnBreach bool   `action:"exit-on-breached"`
+	ExitOnBreach bool   `action:"exit-on-breach"`
 }
 
 func (a *Action) Run() error {
