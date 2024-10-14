@@ -2,6 +2,9 @@ name: Enforce Security SLA
 description: Block PRs that have security vulnerabilities that exceed the SLA
 
 inputs:
+  token:
+    description: GitHub token
+    required: true
   critical-threshold:
     description: SLA for remediation of critical vulnerabilities (in days)
     required: false

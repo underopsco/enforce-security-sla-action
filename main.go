@@ -12,7 +12,7 @@ import (
 	"github.com/underopsco/go-action/pkg/action"
 )
 
-var ghClient = github.NewClient(nil).WithAuthToken(action.Context.Token)
+var ghClient *github.Client
 
 func main() {
 	if err := action.Execute(&Action{}); err != nil {
@@ -21,13 +21,16 @@ func main() {
 }
 
 type Action struct {
-	Critical int `action:"critical-threshold"`
-	High     int `action:"high-threshold"`
-	Medium   int `action:"medium-threshold"`
-	Low      int `action:"low-threshold"`
+	Token    string `action:"token"`
+	Critical int    `action:"critical-threshold"`
+	High     int    `action:"high-threshold"`
+	Medium   int    `action:"medium-threshold"`
+	Low      int    `action:"low-threshold"`
 }
 
 func (a *Action) Run() error {
+	ghClient = github.NewClient(nil).WithAuthToken(a.Token)
+
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	})))
