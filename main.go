@@ -144,8 +144,8 @@ func fetchRepoAlerts(ctx context.Context, owner, name string) ([]*Alert, error) 
 	for _, a := range codeScanningAlerts {
 		alerts = append(alerts, &Alert{
 			Kind:      "CodeScanning",
-			Severity:  *a.RuleSeverity,
-			Link:      *a.HTMLURL,
+			Severity:  a.GetRuleSeverity(),
+			Link:      a.GetHTMLURL(),
 			CreatedAt: a.GetCreatedAt().Time,
 		})
 	}
