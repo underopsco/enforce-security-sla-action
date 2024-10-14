@@ -109,7 +109,7 @@ func (a *Action) Run() error {
 		prEvent.GetNumber(),
 		&github.PullRequestReviewRequest{
 			Event: github.String("REQUEST_CHANGES"),
-			Body:  github.String("Security SLA alerts"),
+			Body:  github.String(fmt.Sprintf("Found %d out of %d security alerts breaching security SLA.", len(breached), len(alerts))),
 		},
 	)
 	return err
