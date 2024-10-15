@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	checkRunName         = "enforce-security-sla-action"
+	checkRunName         = "Security SLA"
 	checkRunSuccessTitle = "No security SLA breaches found"
 	checkRunSuccessText  = "All security alerts are within the security SLA."
 	checkRunFailureTitle = "Found %d security SLA breaches"
