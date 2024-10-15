@@ -44,7 +44,6 @@ func (a *Action) Run() error {
 	})))
 
 	ctx := context.Background()
-	startTime := time.Now()
 
 	criticalThreshold := time.Duration(a.Critical*24) * time.Hour
 	highThreshold := time.Duration(a.High*24) * time.Hour
@@ -56,18 +55,18 @@ func (a *Action) Run() error {
 		return err
 	}
 
-	var (
-		prNumber  int
-		prHeadSHA string
-	)
+	checkRunOpts := github.CreateCheckRunOptions{
+		Name:        checkRunName,
+		Status:      github.String("completed"),
+		StartedAt:   &github.Timestamp{Time: time.Now()},
+		CompletedAt: &github.Timestamp{Time: time.Now()},
+	}
 
 	switch event := event.(type) {
 	case *github.PullRequestEvent:
-		prNumber = event.GetNumber()
-		prHeadSHA = event.PullRequest.Head.GetSHA()
+		checkRunOpts.HeadSHA = event.PullRequest.Head.GetSHA()
 	case *github.PullRequestTargetEvent:
-		prNumber = event.GetNumber()
-		prHeadSHA = event.PullRequest.Head.GetSHA()
+		checkRunOpts.HeadSHA = event.PullRequest.Head.GetSHA()
 	default:
 		return fmt.Errorf("unexpected event type: %T", event)
 	}
@@ -88,35 +87,18 @@ func (a *Action) Run() error {
 	}
 
 	if len(alerts) == 0 {
-		_, _, err := ghClient.PullRequests.CreateReview(
-			ctx,
-			action.Context.RepositoryOwner,
-			action.Context.RepositoryName,
-			prNumber,
-			&github.PullRequestReviewRequest{
-				Event: github.String("APPROVE"),
-			},
-		)
-		if err != nil {
-			return err
+		checkRunOpts.CompletedAt = &github.Timestamp{Time: time.Now()}
+		checkRunOpts.Conclusion = github.String("success")
+		checkRunOpts.Output = &github.CheckRunOutput{
+			Title:   github.String(checkRunSuccessTitle),
+			Summary: github.String(checkRunSuccessText),
 		}
 
 		_, _, err = ghClient.Checks.CreateCheckRun(
 			ctx,
 			action.Context.RepositoryOwner,
 			action.Context.RepositoryName,
-			github.CreateCheckRunOptions{
-				Name:        checkRunName,
-				HeadSHA:     prHeadSHA,
-				Status:      github.String("completed"),
-				Conclusion:  github.String("success"),
-				StartedAt:   &github.Timestamp{Time: startTime},
-				CompletedAt: &github.Timestamp{Time: time.Now()},
-				Output: &github.CheckRunOutput{
-					Title:   github.String(checkRunSuccessTitle),
-					Summary: github.String(checkRunFailureText),
-				},
-			},
+			checkRunOpts,
 		)
 		return err
 	}
@@ -134,69 +116,34 @@ func (a *Action) Run() error {
 		slog.Int("breached", len(breached)))
 
 	if len(breached) == 0 {
-		_, _, err := ghClient.PullRequests.CreateReview(
-			ctx,
-			action.Context.RepositoryOwner,
-			action.Context.RepositoryName,
-			prNumber,
-			&github.PullRequestReviewRequest{
-				Event: github.String("APPROVE"),
-			},
-		)
-		if err != nil {
-			return err
+		checkRunOpts.CompletedAt = &github.Timestamp{Time: time.Now()}
+		checkRunOpts.Conclusion = github.String("success")
+		checkRunOpts.Output = &github.CheckRunOutput{
+			Title:   github.String(checkRunSuccessTitle),
+			Summary: github.String(checkRunSuccessText),
 		}
 
 		_, _, err = ghClient.Checks.CreateCheckRun(
 			ctx,
 			action.Context.RepositoryOwner,
 			action.Context.RepositoryName,
-			github.CreateCheckRunOptions{
-				Name:        checkRunName,
-				HeadSHA:     prHeadSHA,
-				Status:      github.String("completed"),
-				Conclusion:  github.String("success"),
-				StartedAt:   &github.Timestamp{Time: startTime},
-				CompletedAt: &github.Timestamp{Time: time.Now()},
-				Output: &github.CheckRunOutput{
-					Title:   github.String(checkRunSuccessTitle),
-					Summary: github.String(checkRunFailureText),
-				},
-			},
+			checkRunOpts,
 		)
 		return err
 	}
 
-	_, _, err = ghClient.PullRequests.CreateReview(
-		ctx,
-		action.Context.RepositoryOwner,
-		action.Context.RepositoryName,
-		prNumber,
-		&github.PullRequestReviewRequest{
-			Event: github.String("REQUEST_CHANGES"),
-			Body:  github.String(fmt.Sprintf("Found %d out of %d security alerts breaching security SLA.", len(breached), len(alerts))),
-		},
-	)
-	if err != nil {
-		return err
+	checkRunOpts.CompletedAt = &github.Timestamp{Time: time.Now()}
+	checkRunOpts.Conclusion = github.String("success")
+	checkRunOpts.Output = &github.CheckRunOutput{
+		Title:   github.String(checkRunFailureTitle),
+		Summary: github.String(checkRunFailureText),
 	}
 
 	_, _, err = ghClient.Checks.CreateCheckRun(
 		ctx,
 		action.Context.RepositoryOwner,
 		action.Context.RepositoryName,
-		github.CreateCheckRunOptions{
-			Name:       checkRunName,
-			HeadSHA:    prHeadSHA,
-			Status:     github.String("completed"),
-			Conclusion: github.String("failure"),
-			Output: &github.CheckRunOutput{
-				Title:   github.String(fmt.Sprintf(checkRunFailureTitle, len(breached))),
-				Summary: github.String(fmt.Sprintf(checkRunFailureText, len(breached), len(alerts))),
-			},
-			StartedAt:   &github.Timestamp{Time: startTime},
-			CompletedAt: &github.Timestamp{Time: time.Now()},
-		},
+		checkRunOpts,
 	)
 	return err
 }
