@@ -37,6 +37,7 @@ func (a *Action) Run() error {
 	})))
 
 	ctx := context.Background()
+	startTime := time.Now()
 
 	criticalThreshold := time.Duration(a.Critical*24) * time.Hour
 	highThreshold := time.Duration(a.High*24) * time.Hour
@@ -78,6 +79,23 @@ func (a *Action) Run() error {
 				Event: github.String("APPROVE"),
 			},
 		)
+		if err != nil {
+			return err
+		}
+
+		_, _, err = ghClient.Checks.CreateCheckRun(
+			ctx,
+			action.Context.RepositoryOwner,
+			action.Context.RepositoryName,
+			github.CreateCheckRunOptions{
+				Name:        "Security SLA",
+				HeadSHA:     prEvent.PullRequest.Head.GetSHA(),
+				Status:      github.String("completed"),
+				Conclusion:  github.String("success"),
+				StartedAt:   &github.Timestamp{Time: startTime},
+				CompletedAt: &github.Timestamp{Time: time.Now()},
+			},
+		)
 		return err
 	}
 
@@ -103,6 +121,23 @@ func (a *Action) Run() error {
 				Event: github.String("APPROVE"),
 			},
 		)
+		if err != nil {
+			return err
+		}
+
+		_, _, err = ghClient.Checks.CreateCheckRun(
+			ctx,
+			action.Context.RepositoryOwner,
+			action.Context.RepositoryName,
+			github.CreateCheckRunOptions{
+				Name:        "Security SLA",
+				HeadSHA:     prEvent.PullRequest.Head.GetSHA(),
+				Status:      github.String("completed"),
+				Conclusion:  github.String("success"),
+				StartedAt:   &github.Timestamp{Time: startTime},
+				CompletedAt: &github.Timestamp{Time: time.Now()},
+			},
+		)
 		return err
 	}
 
@@ -114,6 +149,27 @@ func (a *Action) Run() error {
 		&github.PullRequestReviewRequest{
 			Event: github.String("REQUEST_CHANGES"),
 			Body:  github.String(fmt.Sprintf("Found %d out of %d security alerts breaching security SLA.", len(breached), len(alerts))),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = ghClient.Checks.CreateCheckRun(
+		ctx,
+		action.Context.RepositoryOwner,
+		action.Context.RepositoryName,
+		github.CreateCheckRunOptions{
+			Name:       "Security SLA",
+			HeadSHA:    prEvent.PullRequest.Head.GetSHA(),
+			Status:     github.String("completed"),
+			Conclusion: github.String("failure"),
+			Output: &github.CheckRunOutput{
+				Title:   github.String("Security SLA"),
+				Summary: github.String(fmt.Sprintf("Found %d out of %d security alerts breaching security SLA.", len(breached), len(alerts))),
+			},
+			StartedAt:   &github.Timestamp{Time: startTime},
+			CompletedAt: &github.Timestamp{Time: time.Now()},
 		},
 	)
 	if err != nil {
