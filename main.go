@@ -12,6 +12,14 @@ import (
 	"github.com/underopsco/go-action/pkg/action"
 )
 
+const (
+	checkRunName         = "enforce-security-sla-action"
+	checkRunSuccessTitle = "No security SLA breaches found"
+	checkRunSuccessText  = "All security alerts are within the security SLA."
+	checkRunFailureTitle = "Found %d security SLA breaches"
+	checkRunFailureText  = "Found %d out of %d security alerts breaching security SLA."
+)
+
 var ghClient *github.Client
 
 func main() {
@@ -98,12 +106,16 @@ func (a *Action) Run() error {
 			action.Context.RepositoryOwner,
 			action.Context.RepositoryName,
 			github.CreateCheckRunOptions{
-				Name:        "Security SLA",
+				Name:        checkRunName,
 				HeadSHA:     prHeadSHA,
 				Status:      github.String("completed"),
 				Conclusion:  github.String("success"),
 				StartedAt:   &github.Timestamp{Time: startTime},
 				CompletedAt: &github.Timestamp{Time: time.Now()},
+				Output: &github.CheckRunOutput{
+					Title:   github.String(checkRunSuccessTitle),
+					Summary: github.String(checkRunFailureText),
+				},
 			},
 		)
 		return err
@@ -140,12 +152,16 @@ func (a *Action) Run() error {
 			action.Context.RepositoryOwner,
 			action.Context.RepositoryName,
 			github.CreateCheckRunOptions{
-				Name:        "Security SLA",
+				Name:        checkRunName,
 				HeadSHA:     prHeadSHA,
 				Status:      github.String("completed"),
 				Conclusion:  github.String("success"),
 				StartedAt:   &github.Timestamp{Time: startTime},
 				CompletedAt: &github.Timestamp{Time: time.Now()},
+				Output: &github.CheckRunOutput{
+					Title:   github.String(checkRunSuccessTitle),
+					Summary: github.String(checkRunFailureText),
+				},
 			},
 		)
 		return err
@@ -170,13 +186,13 @@ func (a *Action) Run() error {
 		action.Context.RepositoryOwner,
 		action.Context.RepositoryName,
 		github.CreateCheckRunOptions{
-			Name:       "Security SLA",
+			Name:       checkRunName,
 			HeadSHA:    prHeadSHA,
 			Status:     github.String("completed"),
 			Conclusion: github.String("failure"),
 			Output: &github.CheckRunOutput{
-				Title:   github.String("Security SLA"),
-				Summary: github.String(fmt.Sprintf("Found %d out of %d security alerts breaching security SLA.", len(breached), len(alerts))),
+				Title:   github.String(fmt.Sprintf(checkRunFailureTitle, len(breached))),
+				Summary: github.String(fmt.Sprintf(checkRunFailureText, len(breached), len(alerts))),
 			},
 			StartedAt:   &github.Timestamp{Time: startTime},
 			CompletedAt: &github.Timestamp{Time: time.Now()},
