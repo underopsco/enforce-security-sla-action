@@ -21,12 +21,11 @@ func main() {
 }
 
 type Action struct {
-	Token        string `action:"token"`
-	Critical     int    `action:"critical-threshold"`
-	High         int    `action:"high-threshold"`
-	Medium       int    `action:"medium-threshold"`
-	Low          int    `action:"low-threshold"`
-	ExitOnBreach bool   `action:"exit-on-breach"`
+	Token    string `action:"token"`
+	Critical int    `action:"critical-threshold"`
+	High     int    `action:"high-threshold"`
+	Medium   int    `action:"medium-threshold"`
+	Low      int    `action:"low-threshold"`
 }
 
 func (a *Action) Run() error {
@@ -183,15 +182,7 @@ func (a *Action) Run() error {
 			CompletedAt: &github.Timestamp{Time: time.Now()},
 		},
 	)
-	if err != nil {
-		return err
-	}
-
-	if a.ExitOnBreach {
-		return fmt.Errorf("found %d out of %d security alerts breaching security SLA", len(breached), len(alerts))
-	}
-
-	return nil
+	return err
 }
 
 type Alert struct {

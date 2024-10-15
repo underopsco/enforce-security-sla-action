@@ -21,10 +21,6 @@ inputs:
     description: SLA for remediation of low vulnerabilities (in days)
     required: false
     default: "60"
-  exit-on-breach:
-    description: Exit with a non-zero status code if the SLA is not met
-    required: false
-    default: "true"
 
 runs:
   using: composite
