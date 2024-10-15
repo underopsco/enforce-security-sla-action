@@ -56,10 +56,9 @@ func (a *Action) Run() error {
 	}
 
 	checkRunOpts := github.CreateCheckRunOptions{
-		Name:        checkRunName,
-		Status:      github.String("completed"),
-		StartedAt:   &github.Timestamp{Time: time.Now()},
-		CompletedAt: &github.Timestamp{Time: time.Now()},
+		Name:      checkRunName,
+		Status:    github.String("completed"),
+		StartedAt: &github.Timestamp{Time: time.Now()},
 	}
 
 	switch event := event.(type) {
@@ -133,10 +132,10 @@ func (a *Action) Run() error {
 	}
 
 	checkRunOpts.CompletedAt = &github.Timestamp{Time: time.Now()}
-	checkRunOpts.Conclusion = github.String("success")
+	checkRunOpts.Conclusion = github.String("failure")
 	checkRunOpts.Output = &github.CheckRunOutput{
-		Title:   github.String(checkRunFailureTitle),
-		Summary: github.String(checkRunFailureText),
+		Title:   github.String(fmt.Sprintf(checkRunFailureTitle, len(breached))),
+		Summary: github.String(fmt.Sprintf(checkRunFailureText, len(breached), len(alerts))),
 	}
 
 	_, _, err = ghClient.Checks.CreateCheckRun(
