@@ -49,8 +49,19 @@ func (a *Action) Run() error {
 		return err
 	}
 
-	prEvent, ok := event.(*github.PullRequestEvent)
-	if !ok {
+	var (
+		prNumber  int
+		prHeadSHA string
+	)
+
+	switch event := event.(type) {
+	case *github.PullRequestEvent:
+		prNumber = event.GetNumber()
+		prHeadSHA = event.PullRequest.Head.GetSHA()
+	case *github.PullRequestTargetEvent:
+		prNumber = event.GetNumber()
+		prHeadSHA = event.PullRequest.Head.GetSHA()
+	default:
 		return fmt.Errorf("unexpected event type: %T", event)
 	}
 
@@ -74,7 +85,7 @@ func (a *Action) Run() error {
 			ctx,
 			action.Context.RepositoryOwner,
 			action.Context.RepositoryName,
-			prEvent.GetNumber(),
+			prNumber,
 			&github.PullRequestReviewRequest{
 				Event: github.String("APPROVE"),
 			},
@@ -89,7 +100,7 @@ func (a *Action) Run() error {
 			action.Context.RepositoryName,
 			github.CreateCheckRunOptions{
 				Name:        "Security SLA",
-				HeadSHA:     prEvent.PullRequest.Head.GetSHA(),
+				HeadSHA:     prHeadSHA,
 				Status:      github.String("completed"),
 				Conclusion:  github.String("success"),
 				StartedAt:   &github.Timestamp{Time: startTime},
@@ -116,7 +127,7 @@ func (a *Action) Run() error {
 			ctx,
 			action.Context.RepositoryOwner,
 			action.Context.RepositoryName,
-			prEvent.GetNumber(),
+			prNumber,
 			&github.PullRequestReviewRequest{
 				Event: github.String("APPROVE"),
 			},
@@ -131,7 +142,7 @@ func (a *Action) Run() error {
 			action.Context.RepositoryName,
 			github.CreateCheckRunOptions{
 				Name:        "Security SLA",
-				HeadSHA:     prEvent.PullRequest.Head.GetSHA(),
+				HeadSHA:     prHeadSHA,
 				Status:      github.String("completed"),
 				Conclusion:  github.String("success"),
 				StartedAt:   &github.Timestamp{Time: startTime},
@@ -145,7 +156,7 @@ func (a *Action) Run() error {
 		ctx,
 		action.Context.RepositoryOwner,
 		action.Context.RepositoryName,
-		prEvent.GetNumber(),
+		prNumber,
 		&github.PullRequestReviewRequest{
 			Event: github.String("REQUEST_CHANGES"),
 			Body:  github.String(fmt.Sprintf("Found %d out of %d security alerts breaching security SLA.", len(breached), len(alerts))),
@@ -161,7 +172,7 @@ func (a *Action) Run() error {
 		action.Context.RepositoryName,
 		github.CreateCheckRunOptions{
 			Name:       "Security SLA",
-			HeadSHA:    prEvent.PullRequest.Head.GetSHA(),
+			HeadSHA:    prHeadSHA,
 			Status:     github.String("completed"),
 			Conclusion: github.String("failure"),
 			Output: &github.CheckRunOutput{
